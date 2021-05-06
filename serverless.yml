@@ -1,0 +1,121 @@
+service: forgotpw-alexa
+
+plugins:
+  - serverless-alexa-skills
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  stage: live
+  region: us-east-1
+  deploymentBucket: forgotpw-deploy-${env:AWS_ENV, 'dev'}
+  memorySize: 2048 # 1024 is default
+  logRetentionInDays: 14 # cloudwatch logs
+  timeout: 10 # seconds
+  versionFunctions: true
+  iamRoleStatements:
+    -
+      Effect: Allow
+      Action:
+        - s3:GetObject
+        - s3:PutObject
+        - s3:ListBucket
+      Resource:
+        - arn:aws:s3:::forgotpw-authorized-requests-${env:AWS_ENV, 'dev'}/*
+        - arn:aws:s3:::forgotpw-authorized-requests-${env:AWS_ENV, 'dev'}
+    -
+      Effect: Allow
+      Action:
+        - s3:GetObject
+        - s3:PutObject
+        - s3:ListBucket
+      Resource:
+        - arn:aws:s3:::forgotpw-usertokens-${env:AWS_ENV, 'dev'}/*
+        - arn:aws:s3:::forgotpw-usertokens-${env:AWS_ENV, 'dev'}
+    -
+      Effect: Allow
+      Action:
+        - s3:GetObject
+      Resource: arn:aws:s3:::forgotpw-userdata-${env:AWS_ENV, 'dev'}/users/*
+    -
+      Effect: Allow
+      Action:
+        - s3:ListBucket
+      Resource: arn:aws:s3:::forgotpw-userdata-*
+
+package:
+  exclude:
+    - .git/**
+    - .terraform/**
+    - terraform/**
+    - .serverless/**
+
+functions:
+  alexa:
+    name: 'fpw-alexa-handler'
+    handler: index.handler
+    events:
+      - alexaSkill: ${ssm:/fpw/ALEXA_SKILL_ID~true}
+    environment:
+      AWS_ENV: ${env:AWS_ENV, 'dev'}
+      LOG_LEVEL: 'debug'
+      USERTOKEN_HASH_HMAC: ${ssm:/fpw/USERTOKEN_HASH_HMAC~true}
+      USERTOKENS_S3_BUCKET: forgotpw-usertokens-${env:AWS_ENV, 'dev'}
+      USERDATA_S3_SSEC_KEY: ${ssm:/fpw/USERDATA_S3_SSEC_KEY~true}
+      USERDATA_S3_BUCKET: forgotpw-userdata-${env:AWS_ENV, 'dev'}
+      AUTHREQ_S3_BUCKET: forgotpw-authorized-requests-${env:AWS_ENV, 'dev'}
+      DASHBOT_API_KEY: ${ssm:/fpw/DASHBOT_API_KEY~true}
+      TWILIO_ACCOUNT_SID: ${ssm:/fpw/TWILIO_ACCOUNT_SID~true}
+      TWILIO_AUTH_TOKEN: ${ssm:/fpw/TWILIO_AUTH_TOKEN~true}
+      TWILIO_FROM_NUMBER: ${ssm:/fpw/TWILIO_FROM_NUMBER}
+      # until a shared module is created, these values are duplicated in both
+      # chatbot-lex-lambda and alexa-lambda:
+      ARID_LENGTH: 9
+      AUTHREQ_EXPIRE_MINS: 10
+      MATCH_HIGH_PCT: 0.70
+      MATCH_LOW_PCT: 0.50
+
+
+custom:
+  alexa:
+    vendorId: ${ssm:/fpw/AMAZON_VENDOR_ID~true}
+    clientId: ${ssm:/fpw/AMAZON_CLIENT_ID~true}
+    clientSecret: ${ssm:/fpw/AMAZON_CLIENT_SECRET~true}
+    skills:
+      - id: ${ssm:/fpw/ALEXA_SKILL_ID~true}
+        manifest:
+          publishingInformation:
+            distributionCountries: [
+              "US"
+            ]
+            isAvailableWorldwide: false
+            testingInstructions: "Say 'Alexa, open ${ssm:/fpw/ALEXA_SKILL_NAME}.'"
+            locales:
+              en-US:
+                # TODO: Replace me
+                name: ${ssm:/fpw/ALEXA_SKILL_NAME}
+                summary: "Submit password requests to ForgotPW"
+                examplePhrases: [
+                  "Alexa, open ${ssm:/fpw/ALEXA_SKILL_NAME}",
+                  "Alexa, ask ${ssm:/fpw/ALEXA_SKILL_NAME} to store a password",
+                  "Alexa, ask ${ssm:/fpw/ALEXA_SKILL_NAME} to set a password"
+                ]
+                description: "Alexa Skill that enables you to request a password to be texted to your phone."
+          apis:
+            custom:
+              endpoint:
+                uri: arn:aws:lambda:${env:AWS_REGION, 'us-east-1'}:${env:AWS_ACCOUNTID}:function:fpw-alexa-handler
+          manifestVersion: '1.0'
+        models:
+          en-US:
+            interactionModel:
+              languageModel:
+                invocationName: ${ssm:/fpw/ALEXA_SKILL_NAME}
+                intents:
+                  - name: AMAZON.HelpIntent
+                    samples: []
+                  # TODO: Add Intent
+                  # Example Below
+                  # - name: MyMetricIntent
+                  #   sample:
+                  #     - tell me about my metric
