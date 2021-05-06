@@ -56,6 +56,57 @@ const HelpIntentHandler = {
   }
 };
 
+const InProgressSetPhoneNumberIntentHandler = {
+  canHandle(handlerInput) {
+    const request = handlerInput.requestEnvelope.request;
+    return request.type === 'IntentRequest'
+      && request.intent.name === 'SetPhoneNumberIntent'
+      && request.dialogState !== 'COMPLETED';
+  },
+  handle(handlerInput) {
+    const currentIntent = handlerInput.requestEnvelope.request.intent;
+    logger.debug('InProgressSetPhoneNumberIntentHandler invoked')
+    return handlerInput.responseBuilder
+      .addDelegateDirective(currentIntent)
+      .getResponse();
+  }
+}
+
+const CompletedSetPhoneNumberIntentHandler = {
+  canHandle(handlerInput) {
+    const request = handlerInput.requestEnvelope.request;
+    return request.type === 'IntentRequest'
+      && request.intent.name === 'SetPhoneNumberIntent'
+      && request.dialogState === 'COMPLETED';
+  },
+  async handle(handlerInput) {
+    const slots = handlerInput.requestEnvelope.request.intent.slots;
+    const phone = slots.PhoneNumber.value;
+
+    const phoneTokenService = new PhoneTokenService({
+      tokenHashHmac: config.USERTOKEN_HASH_HMAC,
+      s3bucket: config.USERTOKENS_S3_BUCKET,
+      defaultCountryCode: 'US'
+    });
+    const userToken = await phoneTokenService.getTokenFromPhone(phone);
+    logger.info(`Receiving phone number (token ${userToken})`);
+
+    // TODO: store phone number alexa userId with phone token in S3 for future use
+
+    // TODO: replace with sending vcard
+    let msg = `Hi I'm Rosa.`;
+    logger.info(`Sending hello text to userToken ${userToken}`);
+    await TwilioLib.sendText(phone, userToken, msg);
+
+    const speechText = `I'm sending you a text messasge now.  Please add my number to your contacts, so we can be friends.`;
+    return handlerInput.responseBuilder
+      .speak(speechText)
+      .withSimpleCard('Set Phone Number', speechText)
+      .getResponse();
+  }
+};
+
+
 const StoreSecretIntentHandler = {
   canHandle(handlerInput) {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
@@ -64,7 +115,7 @@ const StoreSecretIntentHandler = {
   async handle(handlerInput) {
     const slots = handlerInput.requestEnvelope.request.intent.slots;
     const rawApplication = slots.Application.value;
-    const phone = '6095551212';
+    const phone = '6095551212'; // TODO replace
     const phoneTokenService = new PhoneTokenService({
       tokenHashHmac: config.USERTOKEN_HASH_HMAC,
       s3bucket: config.USERTOKENS_S3_BUCKET,
@@ -104,7 +155,7 @@ const RetrieveSecretIntentHandler = {
   async handle(handlerInput) {
     const slots = handlerInput.requestEnvelope.request.intent.slots;
     const rawApplication = slots.Application.value;
-    const phone = '6095551212';
+    const phone = '6095551212'; // TODO replace
     const phoneTokenService = new PhoneTokenService({
       tokenHashHmac: config.USERTOKEN_HASH_HMAC,
       s3bucket: config.USERTOKENS_S3_BUCKET,
@@ -217,6 +268,8 @@ exports.handler = async function (event, context) {
         HelpIntentHandler,
         StoreSecretIntentHandler,
         RetrieveSecretIntentHandler,
+        InProgressSetPhoneNumberIntentHandler,
+        CompletedSetPhoneNumberIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
       )

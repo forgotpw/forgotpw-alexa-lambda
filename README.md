@@ -75,6 +75,7 @@ iamx --profile $PROFILE --command sls alexa update
 
 ### Deploy the Lambda Function
 
+```shell
 export AWS_ENV="dev" && export PROFILE="fpw$AWS_ENV"
 export AWS_ACCOUNTID=$( \
     aws sts get-caller-identity \
@@ -84,6 +85,26 @@ export AWS_ACCOUNTID=$( \
 iam-starter \
     --profile $PROFILE \
     --command sls deploy --verbose
+```
+
+## Deploy the Lambda Function by method of Docker
+
+(More compact, more reliable, but slower deploy process)
+
+The deploy environment will install production dependencies only to keep the package size within Lambda's 250MB limit.  Be sure to re-build the docker container each time.  Requires pip install iam-docker-run.
+
+```shell
+export AWS_ENV="dev" # | prod
+export PROFILE="fpw$AWS_ENV"
+# must re-build docker container each deploy!
+docker build -f Dockerfile.deploy -t forgotpw-alexa-lambda:deploy .
+iam-docker-run \
+    --interactive \
+    --profile $PROFILE \
+    -e AWS_ENV \
+    -e AWS_ACCOUNTID \
+    --image forgotpw-alexa-lambda:deploy
+```
 
 # License
 

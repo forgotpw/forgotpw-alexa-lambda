@@ -1,0 +1,28 @@
+# Build/Deploy environment
+#
+# example usage:
+# export AWS_ENV="dev" && export PROFILE="fpw$AWS_ENV"
+# iam-docker-run \
+#     --interactive \
+#     --profile $PROFILE \
+#     -e AWS_ENV \
+#     --image forgotpw-alexa-lambda:deploy
+
+FROM node:14.15.4
+
+WORKDIR app
+
+COPY . .
+
+# clear out node_modules and reinstall without dev dependencies
+RUN rm -rf ./node_modules && \
+    npm install --only=prod && \
+    npm install -g serverless@latest serverless-prune-plugin@latest serverless-alexa-skills && \
+    rm -rf ./terraform
+
+RUN echo "Ensure unzipped package size is within Lambda's 250MB limit" && \
+    du -h -d 1
+
+ENV AWS_ENV=dev
+
+ENTRYPOINT sls deploy --verbose
