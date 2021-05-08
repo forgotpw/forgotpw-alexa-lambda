@@ -83,19 +83,21 @@ const CompletedSetPhoneNumberIntentHandler = {
     const slots = handlerInput.requestEnvelope.request.intent.slots;
     const phone = slots.PhoneNumber.value;
 
+    logger.info(`Storing phone number`);
+
     const phoneTokenService = new PhoneTokenService({
       tokenHashHmac: config.USERTOKEN_HASH_HMAC,
       s3bucket: config.USERTOKENS_S3_BUCKET,
       defaultCountryCode: 'US'
     });
     const userToken = await phoneTokenService.getTokenFromPhone(phone);
-    logger.info(`Receiving phone number (token ${userToken})`);
-
-    // TODO: store phone number alexa userId with phone token in S3 for future use
+    const alexaUserId = handlerInput.requestEnvelope.session.user.userId;
+    //logger.info(`Saving Alexa User ID ${alexaUserId}`);
+    await phoneTokenService.setAlexaUserIdFromToken(userToken, alexaUserId);
 
     // TODO: replace with sending vcard
     let msg = `Hi I'm Rosa.`;
-    logger.info(`Sending hello text to userToken ${userToken}`);
+    logger.debug(`Sending vcard to user.`);
     await TwilioLib.sendText(phone, userToken, msg);
 
     const speechText = `I'm sending you a text messasge now.  Please add my number to your contacts, so we can be friends.`;
@@ -115,13 +117,18 @@ const StoreSecretIntentHandler = {
   async handle(handlerInput) {
     const slots = handlerInput.requestEnvelope.request.intent.slots;
     const rawApplication = slots.Application.value;
-    const phone = '6095551212'; // TODO replace
+
+    logger.info(`Storing secret for ${rawApplication}`);
+
+    // get phone from alexa id
     const phoneTokenService = new PhoneTokenService({
       tokenHashHmac: config.USERTOKEN_HASH_HMAC,
       s3bucket: config.USERTOKENS_S3_BUCKET,
       defaultCountryCode: 'US'
     });
-    const userToken = await phoneTokenService.getTokenFromPhone(phone);
+    const alexaUserId = handlerInput.requestEnvelope.session.user.userId;
+    const userToken = await phoneTokenService.getTokenFromAlexaUserId(alexaUserId);
+    const phone = await phoneTokenService.getPhoneFromToken(userToken);
 
     //// FROM LEX HANDLER
     const arid = await authorizedRequest.generateAuthorizedRequestFromPhone(phone, rawApplication);
@@ -155,13 +162,18 @@ const RetrieveSecretIntentHandler = {
   async handle(handlerInput) {
     const slots = handlerInput.requestEnvelope.request.intent.slots;
     const rawApplication = slots.Application.value;
-    const phone = '6095551212'; // TODO replace
+
+    logger.info(`Retrieving secret for ${rawApplication}`);
+
+    // get phone from alexa id
     const phoneTokenService = new PhoneTokenService({
       tokenHashHmac: config.USERTOKEN_HASH_HMAC,
       s3bucket: config.USERTOKENS_S3_BUCKET,
       defaultCountryCode: 'US'
     });
-    const userToken = await phoneTokenService.getTokenFromPhone(phone);
+    const alexaUserId = handlerInput.requestEnvelope.session.user.userId;
+    const userToken = await phoneTokenService.getTokenFromAlexaUserId(alexaUserId);
+    const phone = await phoneTokenService.getPhoneFromToken(userToken);
 
     //// FROM LEX HANDLER
     const applicationService = new ApplicationService();
