@@ -31,11 +31,11 @@ const HelloIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'HelloIntent';
   },
   handle(handlerInput) {
-    const speechText = 'Hello World!';
+    const speechText = 'Hi, I make it a lot easier to be secure online.  Try storing a password with me.  You can make it a test password just to try it out.';
 
     return handlerInput.responseBuilder
       .speak(speechText)
-      .withSimpleCard('Hello World', speechText)
+      .withSimpleCard('Hello', speechText)
       .getResponse();
   }
 };
@@ -95,9 +95,11 @@ const CompletedSetPhoneNumberIntentHandler = {
     //logger.info(`Saving Alexa User ID ${alexaUserId}`);
     await phoneTokenService.setAlexaUserIdFromToken(userToken, alexaUserId);
 
-    // TODO: replace with sending vcard
-    let msg = `Hi I'm Rosa.`;
-    logger.debug(`Sending vcard to user.`);
+    logger.debug(`Texting vcard to user.`);
+    await TwilioLib.sendVcard(phone, userToken);
+
+    const template = await readTemplate('vcard.tmpl');
+    let msg = template;
     await TwilioLib.sendText(phone, userToken, msg);
 
     const speechText = `I'm sending you a text messasge now.  Please add my number to your contacts, so we can be friends.`;
