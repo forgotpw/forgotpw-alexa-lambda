@@ -56,6 +56,20 @@ const HelpIntentHandler = {
   }
 };
 
+const FallbackIntentHandler = {
+  canHandle(handlerInput) {
+    return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+      && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.FallbackIntent';
+  },
+  handle(handlerInput) {
+    const speechText = `Sorry I'm not sure what you mean.`;
+
+    return handlerInput.responseBuilder
+      .speak(speechText)
+      .getResponse();
+  }
+};
+
 const InProgressSetPhoneNumberIntentHandler = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope.request;
@@ -83,7 +97,7 @@ const CompletedSetPhoneNumberIntentHandler = {
     const slots = handlerInput.requestEnvelope.request.intent.slots;
     const phone = slots.PhoneNumber.value;
 
-    logger.info(`Storing phone number`);
+    logger.info(`CompletedSetPhoneNumberIntentHandler`);
 
     const phoneTokenService = new PhoneTokenService({
       tokenHashHmac: config.USERTOKEN_HASH_HMAC,
@@ -120,7 +134,7 @@ const StoreSecretIntentHandler = {
     const slots = handlerInput.requestEnvelope.request.intent.slots;
     const rawApplication = slots.Application.value;
 
-    logger.info(`Storing secret for ${rawApplication}`);
+    logger.info(`StoreSecretIntentHandler for ${rawApplication}`);
 
     // get phone from alexa id
     const phoneTokenService = new PhoneTokenService({
@@ -130,6 +144,16 @@ const StoreSecretIntentHandler = {
     });
     const alexaUserId = handlerInput.requestEnvelope.session.user.userId;
     const userToken = await phoneTokenService.getTokenFromAlexaUserId(alexaUserId);
+    if (userToken == '') {
+      // if the user hasn't yet associated a phone number with Alexa, we need to
+      // prompt for a phone number
+      logger.info('No Alexa userId found in token database, redirecting to InProgressSetPhoneNumberIntentHandler');
+      const speechText = `You have to tell me your phone number first!  I need it to text you links to securely store and retrieve passwords.`;
+      return handlerInput.responseBuilder
+      .speak(speechText)
+      .getResponse();
+    }
+
     const phone = await phoneTokenService.getPhoneFromToken(userToken);
 
     //// FROM LEX HANDLER
@@ -165,7 +189,7 @@ const RetrieveSecretIntentHandler = {
     const slots = handlerInput.requestEnvelope.request.intent.slots;
     const rawApplication = slots.Application.value;
 
-    logger.info(`Retrieving secret for ${rawApplication}`);
+    logger.info(`RetrieveSecretIntentHandler for ${rawApplication}`);
 
     // get phone from alexa id
     const phoneTokenService = new PhoneTokenService({
@@ -175,6 +199,16 @@ const RetrieveSecretIntentHandler = {
     });
     const alexaUserId = handlerInput.requestEnvelope.session.user.userId;
     const userToken = await phoneTokenService.getTokenFromAlexaUserId(alexaUserId);
+    if (userToken == '') {
+      // if the user hasn't yet associated a phone number with Alexa, we need to
+      // prompt for a phone number
+      logger.info('No Alexa userId found in token database, redirecting to InProgressSetPhoneNumberIntentHandler');
+      const speechText = `You have to tell me your phone number first!  I need it to text you links to securely store and retrieve passwords.`;
+      return handlerInput.responseBuilder
+      .speak(speechText)
+      .getResponse();
+    }
+
     const phone = await phoneTokenService.getPhoneFromToken(userToken);
 
     //// FROM LEX HANDLER
@@ -280,6 +314,7 @@ exports.handler = async function (event, context) {
         LaunchRequestHandler,
         HelloIntentHandler,
         HelpIntentHandler,
+        FallbackIntentHandler,
         StoreSecretIntentHandler,
         RetrieveSecretIntentHandler,
         InProgressSetPhoneNumberIntentHandler,

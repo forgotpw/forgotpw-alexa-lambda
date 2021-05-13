@@ -1,0 +1,194 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "rosa bot",
+            "intents": [
+                {
+                    "name": "AMAZON.FallbackIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "StoreSecretIntent",
+                    "slots": [
+                        {
+                            "name": "Application",
+                            "type": "AMAZON.SoftwareApplication",
+                            "samples": [
+                                "Set password for {Application}",
+                                "For {Application}",
+                                "{Application}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "Store my password for {Application}",
+                        "Set my password for {Application}",
+                        "Store password for {Application}",
+                        "Set password for {Application}"
+                    ]
+                },
+                {
+                    "name": "HelloIntent",
+                    "slots": [],
+                    "samples": [
+                        "Hi",
+                        "Hello"
+                    ]
+                },
+                {
+                    "name": "RetrieveSecretIntent",
+                    "slots": [
+                        {
+                            "name": "Application",
+                            "type": "AMAZON.SoftwareApplication",
+                            "samples": [
+                                "Get a password for {Application}",
+                                "For {Application}",
+                                "{Application}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "Retrieve password for {Application}",
+                        "Get password for {Application}"
+                    ]
+                },
+                {
+                    "name": "SetPhoneNumberIntent",
+                    "slots": [
+                        {
+                            "name": "PhoneNumber",
+                            "type": "AMAZON.PhoneNumber",
+                            "samples": [
+                                "My phone number is {PhoneNumber}",
+                                "{PhoneNumber}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "Remember my phone number",
+                        "Setup my phone",
+                        "Setup my mobile phone",
+                        "Set my mobile phone",
+                        "Set my phone",
+                        "Configure my phone number as {PhoneNumber}",
+                        "Store my phone number as {PhoneNumber}",
+                        "Set my phone number to {PhoneNumber}",
+                        "Setup my phone number",
+                        "Set my phone number",
+                        "Store my phone number"
+                    ]
+                }
+            ],
+            "types": []
+        },
+        "dialog": {
+            "intents": [
+                {
+                    "name": "SetPhoneNumberIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "PhoneNumber",
+                            "type": "AMAZON.PhoneNumber",
+                            "confirmationRequired": true,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "confirmation": "Confirm.Slot.1021442800687.76236123605",
+                                "elicitation": "Elicit.Slot.1021442800687.76236123605"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "RetrieveSecretIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "Application",
+                            "type": "AMAZON.SoftwareApplication",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.42409460094.1602916181088"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "StoreSecretIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "Application",
+                            "type": "AMAZON.SoftwareApplication",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.606113381791.1205364223448"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "delegationStrategy": "ALWAYS"
+        },
+        "prompts": [
+            {
+                "id": "Elicit.Slot.1021442800687.76236123605",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What is your mobile phone number?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Slot.1021442800687.76236123605",
+                "variations": [
+                    {
+                        "type": "SSML",
+                        "value": "<speak>I heard <say-as interpret-as=\"telephone\"> {PhoneNumber} </say-as> , is that correct?</speak>"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.42409460094.1602916181088",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What application do you want to get a password for?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.606113381791.1205364223448",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What application do you want to set a password for?"
+                    }
+                ]
+            }
+        ]
+    }
+}

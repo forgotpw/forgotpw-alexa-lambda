@@ -51,11 +51,15 @@ iamx \
 ### Setup - Create Alexa Skill
 
 ```shell
+# apply terraform to create SSM parameters
+cd ./terraform/$AWS_ENV
+terraform apply
+
 export AWS_ENV="dev" && export PROFILE="fpw$AWS_ENV"
 
 iamx --profile $PROFILE --command sls alexa auth
 iamx --profile $PROFILE \
-    --command "sls alexa create --name 'Forgot PW' --locale en-US --type custom"
+    --command "sls alexa create --name 'Rosa' --locale en-US --type custom"
 ```
 
 The above command will output the Alexa Skill ID.  Place this value in the secure SSM parameter `/fpw/ALEXA_SKILL_ID` in the private secrets git repo.
@@ -72,6 +76,10 @@ export AWS_ACCOUNTID=$( \
         --profile $PROFILE)
 iamx --profile $PROFILE --command sls alexa update
 ```
+
+### Setup - Upload interaction model
+
+Login to the Alexa Developer Console, enter the skill, select Interaction Model, and upload skill.json into the console.
 
 ### Deploy the Lambda Function
 
