@@ -65,6 +65,8 @@
                         }
                     ],
                     "samples": [
+                        "Retrieve my password for {Application}",
+                        "Get my password for {Application}",
                         "Retrieve password for {Application}",
                         "Get password for {Application}"
                     ]
