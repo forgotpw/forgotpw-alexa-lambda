@@ -102,8 +102,12 @@ iam-starter \
 The deploy environment will install production dependencies only to keep the package size within Lambda's 250MB limit.  Be sure to re-build the docker container each time.  Requires pip install iam-docker-run.
 
 ```shell
-export AWS_ENV="dev" # | prod
-export PROFILE="fpw$AWS_ENV"
+export AWS_ENV="dev" && export PROFILE="fpw$AWS_ENV"
+export AWS_ACCOUNTID=$( \
+    aws sts get-caller-identity \
+        --query "Account" \
+        --output text \
+        --profile $PROFILE)
 # must re-build docker container each deploy!
 docker build -f Dockerfile.deploy -t forgotpw-alexa-lambda:deploy .
 iam-docker-run \
