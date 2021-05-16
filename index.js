@@ -30,8 +30,23 @@ const HelloIntentHandler = {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'HelloIntent';
   },
-  handle(handlerInput) {
-    const speechText = 'Hi, I make it a lot easier to be secure online.  Try storing a password with me.  You can make it a test password just to try it out.';
+  async handle(handlerInput) {
+    const alexaUserId = handlerInput.requestEnvelope.session.user.userId;
+    const userToken = await getUserTokenFromAlexaUserId(alexaUserId);
+
+    let speechText;
+    // if first time user
+    if (userToken == '') {
+      speechText = 'Hi, I make it a lot easier to be secure online.  Try storing a password with me.  You can make it a test password just to try it out.';
+    } else {
+      // next time say something different back
+      const helloAgainResponses = [
+        "Hi, hope you're being safe and secure online today.",
+        "Hi, thanks for checking in on me.  I'm just here keeping people safe and secure.",
+        "Hi.  You know what the funniest password is I've heard all day?  1 2 3 4 5.  I mean, come on."
+      ];
+      speechText = helloAgainResponses[Math.floor(Math.random() * helloAgainResponses.length)];
+    }
 
     return handlerInput.responseBuilder
       .speak(speechText)
@@ -136,14 +151,8 @@ const StoreSecretIntentHandler = {
 
     logger.info(`StoreSecretIntentHandler for ${rawApplication}`);
 
-    // get phone from alexa id
-    const phoneTokenService = new PhoneTokenService({
-      tokenHashHmac: config.USERTOKEN_HASH_HMAC,
-      s3bucket: config.USERTOKENS_S3_BUCKET,
-      defaultCountryCode: 'US'
-    });
     const alexaUserId = handlerInput.requestEnvelope.session.user.userId;
-    const userToken = await phoneTokenService.getTokenFromAlexaUserId(alexaUserId);
+    const userToken = await getUserTokenFromAlexaUserId(alexaUserId);
     if (userToken == '') {
       // if the user hasn't yet associated a phone number with Alexa, we need to
       // prompt for a phone number
@@ -153,8 +162,7 @@ const StoreSecretIntentHandler = {
       .speak(speechText)
       .getResponse();
     }
-
-    const phone = await phoneTokenService.getPhoneFromToken(userToken);
+    const phone = await getPhoneFromToken(userToken);
 
     //// FROM LEX HANDLER
     const arid = await authorizedRequest.generateAuthorizedRequestFromPhone(phone, rawApplication);
@@ -190,15 +198,8 @@ const RetrieveSecretIntentHandler = {
     const rawApplication = slots.Application.value;
 
     logger.info(`RetrieveSecretIntentHandler for ${rawApplication}`);
-
-    // get phone from alexa id
-    const phoneTokenService = new PhoneTokenService({
-      tokenHashHmac: config.USERTOKEN_HASH_HMAC,
-      s3bucket: config.USERTOKENS_S3_BUCKET,
-      defaultCountryCode: 'US'
-    });
     const alexaUserId = handlerInput.requestEnvelope.session.user.userId;
-    const userToken = await phoneTokenService.getTokenFromAlexaUserId(alexaUserId);
+    const userToken = await getUserTokenFromAlexaUserId(alexaUserId);
     if (userToken == '') {
       // if the user hasn't yet associated a phone number with Alexa, we need to
       // prompt for a phone number
@@ -208,8 +209,7 @@ const RetrieveSecretIntentHandler = {
       .speak(speechText)
       .getResponse();
     }
-
-    const phone = await phoneTokenService.getPhoneFromToken(userToken);
+    const phone = await getPhoneFromToken(userToken);
 
     //// FROM LEX HANDLER
     const applicationService = new ApplicationService();
@@ -295,6 +295,30 @@ const ErrorHandler = {
       .getResponse();
   },
 };
+
+// may return an empty string if no userToken exists yet for this user, which
+// would be the case if the user hadn't stored their phone number through
+// alexa, which associates the alexaUserId with the tokenId.
+// basically: alexaUserId -> tokenId -> phone
+async function getUserTokenFromAlexaUserId(alexaUserId) {
+  const phoneTokenService = new PhoneTokenService({
+    tokenHashHmac: config.USERTOKEN_HASH_HMAC,
+    s3bucket: config.USERTOKENS_S3_BUCKET,
+    defaultCountryCode: 'US'
+  });
+  const userToken = await phoneTokenService.getTokenFromAlexaUserId(alexaUserId);
+  return userToken;  
+}
+
+async function getPhoneFromToken(userToken) {
+  const phoneTokenService = new PhoneTokenService({
+    tokenHashHmac: config.USERTOKEN_HASH_HMAC,
+    s3bucket: config.USERTOKENS_S3_BUCKET,
+    defaultCountryCode: 'US'
+  });
+  const phone = await phoneTokenService.getPhoneFromToken(userToken);
+  return phone;
+}
 
 async function readTemplate(templateName) {
   const fs = require('fs');

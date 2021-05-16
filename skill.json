@@ -37,6 +37,8 @@
                         }
                     ],
                     "samples": [
+                        "Send me a link to set my password for {Application}",
+                        "Text me a link to set my password for {Application}",
                         "Store my password for {Application}",
                         "Set my password for {Application}",
                         "Store password for {Application}",
@@ -65,6 +67,8 @@
                         }
                     ],
                     "samples": [
+                        "Send me my password for {Application}",
+                        "Text me my password for {Application}",
                         "Retrieve my password for {Application}",
                         "Get my password for {Application}",
                         "Retrieve password for {Application}",
